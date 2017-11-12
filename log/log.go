@@ -16,6 +16,7 @@ import (
 )
 
 const humanLogEnvName = "APPKIT_LOG_HUMAN"
+const logEnvLevel = "LOG_LEVEL"
 
 type Logger struct {
 	log.Logger
@@ -81,6 +82,26 @@ func (l Logger) Warn() log.Logger {
 	return l
 }
 
+func GetLogLevel() level.Option {
+	levelName := strings.ToLower(os.Getenv(logEnvLevel))
+
+	levelCurrent := level.AllowAll()
+
+	switch levelName {
+	case "error":
+		levelCurrent = level.AllowError()
+	case "debug":
+		levelCurrent = level.AllowDebug()
+	case "warn":
+		levelCurrent = level.AllowWarn()
+	case "info":
+		levelCurrent = level.AllowInfo()
+	case "none":
+		levelCurrent = level.AllowNone()
+	}
+	return levelCurrent
+}
+
 func Default() Logger {
 	human := strings.ToLower(os.Getenv(humanLogEnvName))
 	if len(human) > 0 && human != "false" && human != "0" {
@@ -90,6 +111,7 @@ func Default() Logger {
 	var timer log.Valuer = func() interface{} { return time.Now().Format(time.RFC3339Nano) }
 
 	l := log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
+	l = level.NewFilter(l, GetLogLevel())
 
 	lg := Logger{
 		Logger: l,
